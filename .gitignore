@@ -78,12 +78,8 @@ frontend/README.md
 .DS_Store
 Thumbs.db
 
-# VS Code — keep workspace settings, ignore personal overrides
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/launch.json
-!.vscode/tasks.json
+# VS Code
+.vscode/
 
 # =============================================================================
 # Docker
