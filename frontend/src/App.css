@@ -34,7 +34,7 @@ body {
   height: 36px;
   width: auto;
   margin-bottom: 0.5rem;
-  /* SVG is dark — invert to white for the dark header background */
+  /* SVG is dark - invert to white for the dark header background */
   filter: brightness(0) invert(1);
 }
 

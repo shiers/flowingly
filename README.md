@@ -8,7 +8,7 @@ A full stack web application that parses structured data from semi-structured em
 
 The application accepts a block of pasted text, extracts XML-style tagged fields, applies validation rules, calculates GST, and displays the result as formatted JSON. Validation errors are surfaced clearly when required fields are missing or malformed.
 
-The implementation prioritises deterministic behaviour, strict validation rules, and separation of concerns — ensuring the system is predictable, testable, and straightforward to extend.
+The implementation prioritises deterministic behaviour, strict validation rules, and separation of concerns - ensuring the system is predictable, testable, and straightforward to extend.
 
 ---
 
@@ -37,13 +37,13 @@ The implementation prioritises deterministic behaviour, strict validation rules,
 
 ## Why .NET 8?
 
-ASP.NET Core Web API on .NET 8 is a mature LTS platform widely used in production SaaS environments. It provides strong support for dependency injection, clean API design, and testability without ceremony. The focus of this challenge is maintainable, testable code — .NET 8 delivers that without requiring the newest runtime.
+ASP.NET Core Web API on .NET 8 is a mature LTS platform widely used in production SaaS environments. It provides strong support for dependency injection, clean API design, and testability without ceremony. The focus of this challenge is maintainable, testable code - .NET 8 delivers that without requiring the newest runtime.
 
 ---
 
 ## Why React + TypeScript?
 
-React and TypeScript align with modern frontend development practices and reflect the kind of stack used in production workflow automation tools. The frontend separates view, state, and API concerns across components, hooks, and a service layer — keeping each piece focused and independently testable.
+React and TypeScript align with modern frontend development practices and reflect the kind of stack used in production workflow automation tools. The frontend separates view, state, and API concerns across components, hooks, and a service layer - keeping each piece focused and independently testable.
 
 ---
 
@@ -54,26 +54,26 @@ React and TypeScript align with modern frontend development practices and reflec
 ```
 ImportController
   └── ImportApplicationService
-        ├── MarkupParser          — extracts XML-style tags, detects unmatched pairs
-        ├── ImportValidator       — applies business rules, resolves cost centre default
-        ├── TaxCalculator         — computes GST-inclusive breakdown
-        ├── WorkflowInsightBuilder — classifies workflow type
+        ├── MarkupParser           - extracts XML-style tags, detects unmatched pairs
+        ├── ImportValidator        - applies business rules, resolves cost centre default
+        ├── TaxCalculator          - computes GST-inclusive breakdown
+        ├── WorkflowInsightBuilder - classifies workflow type
         └── Response DTO mapping
 ```
 
-Each service has a single responsibility and is injected via interface. The application service orchestrates the pipeline linearly — parse, validate, calculate, classify, map.
+Each service has a single responsibility and is injected via interface. The application service orchestrates the pipeline linearly - parse, validate, calculate, classify, map.
 
 ### Frontend structure
 
 ```
 App.tsx
-  ├── TextInputPanel   — textarea, Submit, Clear, loading state
-  ├── ResultPanel      — formatted JSON output
-  └── ErrorPanel       — validation errors and network errors
+  ├── TextInputPanel   - textarea, Submit, Clear, loading state
+  ├── ResultPanel      - formatted JSON output
+  └── ErrorPanel       - validation errors and network errors
 
-hooks/useImportParser  — manages state and API calls
-services/importApi     — isolated fetch wrapper
-types/importTypes      — TypeScript contracts matching the API response
+hooks/useImportParser  - manages state and API calls
+services/importApi     - isolated fetch wrapper
+types/importTypes      - TypeScript contracts matching the API response
 ```
 
 ---
@@ -142,18 +142,12 @@ POST /api/import/parse
 
 ## Validation Rules
 
-Validation is applied in the following order:
-
-1. Parser errors (unmatched tags)
-2. Required field presence
-3. Numeric validity of `<total>`
-
 | Condition | Behaviour | Error code |
 |---|---|---|
 | Opening tag with no matching closing tag | Reject entire message | `UNMATCHED_TAG` |
 | `<total>` absent or blank | Reject entire message | `MISSING_TOTAL` |
 | `<total>` present but not a valid positive number | Reject entire message | `INVALID_TOTAL` |
-| `<cost_centre>` absent or blank | Accept — default to `UNKNOWN` | — |
+| `<cost_centre>` absent or blank | Accept - default to `UNKNOWN` | - |
 
 ---
 
@@ -167,7 +161,7 @@ totalExcludingTax  = totalIncludingTax / 1.15
 salesTax           = totalIncludingTax - totalExcludingTax
 ```
 
-All currency values are rounded to 2 decimal places. The rounding approach — deriving `salesTax` from the rounded `totalExcludingTax` rather than rounding independently — ensures the two components always reconcile to the original total.
+All currency values are rounded to 2 decimal places. The rounding approach - deriving `salesTax` from the rounded `totalExcludingTax` rather than rounding independently - ensures the two components always reconcile to the original total.
 
 ---
 
@@ -182,7 +176,7 @@ In a production workflow automation platform, an AI-assisted layer could be intr
 - natural language summarisation of the parsed result
 - routing decisions based on extracted context
 
-The response includes `"aiExtensionReady": true` to identify where this layer would integrate — after the deterministic pipeline has validated and structured the data — without compromising the reliability of the core parsing logic.
+The response includes `"aiExtensionReady": true` to identify where this layer would integrate - after the deterministic pipeline has validated and structured the data - without compromising the reliability of the core parsing logic.
 
 ---
 
@@ -263,9 +257,9 @@ npm test
 
 Tests cover:
 
-- Full valid input flow — submits sample email, verifies JSON output with correct field values
-- Missing `<total>` — verifies `MISSING_TOTAL` error is displayed and result panel is absent
-- Clear button — verifies input and result are reset
+- Full valid input flow - submits sample email, verifies JSON output with correct field values
+- Missing `<total>` - verifies `MISSING_TOTAL` error is displayed and result panel is absent
+- Clear button - verifies input and result are reset
 
 ---
 
@@ -275,7 +269,7 @@ Tests cover:
 The parser uses an iterative innermost-first regex strategy rather than a full XML parser. This keeps the dependency footprint minimal and the behaviour predictable for the tag formats defined in the challenge. It handles both nested blocks (`<expense>...</expense>`) and inline tags correctly.
 
 **Separation of parsing from validation**  
-`MarkupParser` is responsible only for extraction and tag-pair integrity. It returns `null` fields for absent tags — it does not decide whether absence is an error. `ImportValidator` owns that decision. This makes each service independently testable and keeps responsibilities clear.
+`MarkupParser` is responsible only for extraction and tag-pair integrity. It returns `null` fields for absent tags - it does not decide whether absence is an error. `ImportValidator` owns that decision. This makes each service independently testable and keeps responsibilities clear.
 
 **`ResolveCostCentre` on the validator**  
 The defaulting rule for `cost_centre` is a business rule, not a parsing concern. Placing `ResolveCostCentre` on `IImportValidator` keeps the rule co-located with the validation logic that governs it, without mutating the immutable `ParsedImportData` domain model.
@@ -284,10 +278,10 @@ The defaulting rule for `cost_centre` is a business rule, not a parsing concern.
 All backend services are pure functions with no I/O. The application service tests use real implementations throughout, which exercises the full pipeline end-to-end and avoids the overhead of a mocking framework for a project of this scope.
 
 **Plain CSS over a UI framework**  
-The frontend uses plain CSS. The UI requirements are simple and well-defined — introducing a component library would add complexity without benefit for a focused challenge submission.
+The frontend uses plain CSS. The UI requirements are simple and well-defined - introducing a component library would add complexity without benefit for a focused challenge submission.
 
 **HTTP 422 for validation failures**  
-The API returns `422 Unprocessable Entity` for validation errors rather than `400 Bad Request`. The request is syntactically valid JSON — the content fails business rules, which is the semantic distinction `422` is designed for.
+The API returns `422 Unprocessable Entity` for validation errors rather than `400 Bad Request`. The request is syntactically valid JSON - the content fails business rules, which is the semantic distinction `422` is designed for.
 
 ---
 
