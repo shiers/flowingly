@@ -1,0 +1,93 @@
+# =============================================================================
+# .NET / Backend
+# =============================================================================
+
+# Build output
+backend/**/bin/
+backend/**/obj/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+
+# Visual Studio
+.vs/
+*.rsuser
+
+# Test results
+backend/**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# =============================================================================
+# Node / Frontend & E2E
+# =============================================================================
+
+**/node_modules/
+
+# Vite build output
+frontend/dist/
+frontend/dist-ssr/
+
+# Vite dev cache
+frontend/node_modules/.vite/
+frontend/node_modules/.vite-temp/
+
+# Playwright output
+**/test-results/
+**/playwright-report/
+**/blob-report/
+playwright/.cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env files
+*.local
+.env
+.env.*
+!.env.example
+
+# Vite scaffold assets (not part of this project)
+frontend/src/assets/hero.png
+frontend/src/assets/react.svg
+frontend/src/assets/vite.svg
+
+# Vite default README (project README is at root)
+frontend/README.md
+
+# =============================================================================
+# OS / Editor
+# =============================================================================
+
+.DS_Store
+Thumbs.db
+
+# VS Code — keep workspace settings, ignore personal overrides
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# =============================================================================
+# Docker
+# =============================================================================
+
+# Ignore any local override compose files
+docker-compose.override.yml
