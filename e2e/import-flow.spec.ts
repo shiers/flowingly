@@ -75,3 +75,27 @@ test('clear button resets input and result', async ({ page }) => {
   await expect(page.getByLabel('Email or text input')).toHaveValue('');
   await expect(page.getByLabel('Parsed JSON output')).not.toBeVisible();
 });
+
+// ---------------------------------------------------------------------------
+// Custom tax rate
+// ---------------------------------------------------------------------------
+
+test('custom tax rate produces correct tax breakdown', async ({ page }) => {
+  await page.goto('/');
+
+  await page.getByLabel('Email or text input').fill(VALID_INPUT);
+
+  // Set tax rate to 10%
+  await page.getByLabel('Tax rate percentage').fill('10');
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByLabel('Parsed JSON output')).toBeVisible({ timeout: 10_000 });
+
+  const json = await page.getByLabel('Parsed JSON output').textContent();
+  const data = JSON.parse(json ?? '{}');
+
+  // 35000 at 10%: totalExcludingTax = 35000 / 1.10 = 31818.18, salesTax = 3181.82
+  expect(data.totalIncludingTax).toBe(35000);
+  expect(data.totalExcludingTax).toBe(31818.18);
+  expect(data.salesTax).toBe(3181.82);
+});
