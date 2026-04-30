@@ -7,15 +7,16 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// --- CORS: allow frontend dev server and production container ---
+// --- CORS: allow frontend dev server, production container, and Azure Static Web Apps ---
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy
             .WithOrigins(
-                "http://localhost:5173",  // Vite dev server
-                "http://localhost:8080"   // Nginx production container
+                "http://localhost:5173",   // Vite dev server
+                "http://localhost:8080",   // Nginx production container
+                "https://ambitious-meadow-06be83200.7.azurestaticapps.net" // Azure Static Web Apps
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
