@@ -102,7 +102,7 @@ az containerapp create \
   --resource-group "${RESOURCE_GROUP}" \
   --environment "${CONTAINER_ENV}" \
   --image "mcr.microsoft.com/dotnet/samples:aspnetapp" \
-  --target-port 8080 \
+  --target-port 5000 \
   --ingress external \
   --min-replicas 0 \
   --max-replicas 1 \

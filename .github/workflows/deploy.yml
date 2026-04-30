@@ -39,14 +39,11 @@ jobs:
           tags: ${{ secrets.ACR_LOGIN_SERVER }}/flowingly-api:latest
 
       - name: Deploy to Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          resourceGroup: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          containerAppName: ${{ secrets.AZURE_CONTAINER_APP_NAME }}
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/flowingly-api:latest
-          registryUrl: ${{ secrets.ACR_LOGIN_SERVER }}
-          registryUsername: ${{ secrets.ACR_USERNAME }}
-          registryPassword: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          az containerapp update \
+            --name ${{ secrets.AZURE_CONTAINER_APP_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --image ${{ secrets.ACR_LOGIN_SERVER }}/flowingly-api:latest
 
   # ---------------------------------------------------------------------------
   # Build and deploy the React frontend to Azure Static Web Apps
