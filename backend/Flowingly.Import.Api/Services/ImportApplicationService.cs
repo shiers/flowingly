@@ -26,7 +26,7 @@ public sealed class ImportApplicationService : IImportApplicationService
         _insightBuilder = insightBuilder;
     }
 
-    public ParseResponse Parse(string text)
+    public ParseResponse Parse(string text, decimal? taxRate = null)
     {
         // Step 1: extract fields from raw text.
         var parsed = _parser.TryParse(text, out var parseErrors);
@@ -48,7 +48,9 @@ public sealed class ImportApplicationService : IImportApplicationService
         var costCentre = _validator.ResolveCostCentre(parsed);
 
         // Step 5: calculate tax — Total is guaranteed non-null and valid at this point.
-        var tax = _taxCalculator.Calculate(parsed.Total!);
+        // Convert percentage (e.g. 15) to fractional rate (0.15) when provided.
+        var fractionalRate = taxRate.HasValue ? taxRate.Value / 100m : (decimal?)null;
+        var tax = _taxCalculator.Calculate(parsed.Total!, fractionalRate);
 
         // Step 6: classify workflow.
         var classification = _insightBuilder.Classify(parsed);

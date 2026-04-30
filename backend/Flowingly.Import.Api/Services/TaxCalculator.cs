@@ -3,16 +3,18 @@ using Flowingly.Import.Api.Domain;
 namespace Flowingly.Import.Api.Services;
 
 /// <summary>
-/// Calculates GST-inclusive tax breakdown.
-/// Assumes a fixed 15% GST rate applied to a tax-inclusive total.
+/// Calculates tax-inclusive breakdown.
+/// Defaults to 15% when no rate is supplied.
 /// Responsible only for arithmetic — no parsing, no validation.
 /// </summary>
 public sealed class TaxCalculator : ITaxCalculator
 {
-    private const decimal GstRate = 0.15m;
+    private const decimal DefaultTaxRate = 0.15m;
 
-    public TaxResult Calculate(string rawTotal)
+    public TaxResult Calculate(string rawTotal, decimal? taxRate = null)
     {
+        var rate = taxRate ?? DefaultTaxRate;
+
         // Strip commas to support values like "35,000".
         var normalised = rawTotal.Replace(",", string.Empty);
 
@@ -20,7 +22,7 @@ public sealed class TaxCalculator : ITaxCalculator
         // Parse will throw if the value is not numeric — this is intentional.
         var totalIncludingTax = decimal.Parse(normalised);
 
-        var totalExcludingTax = Math.Round(totalIncludingTax / (1 + GstRate), 2);
+        var totalExcludingTax = Math.Round(totalIncludingTax / (1 + rate), 2);
         var salesTax = Math.Round(totalIncludingTax - totalExcludingTax, 2);
 
         return new TaxResult

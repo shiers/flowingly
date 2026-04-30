@@ -178,4 +178,35 @@ public sealed class ImportApplicationServiceTests
         response.Data.Description.Should().BeNull();
         response.Data.Date.Should().BeNull();
     }
+
+    // -------------------------------------------------------------------------
+    // Custom tax rate
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Parse_CustomTaxRate_UsesSuppliedRate()
+    {
+        // 10% rate: totalExcludingTax = 1000 / 1.10 = 909.09, salesTax = 90.91
+        const string input = "<expense><total>1000</total></expense>";
+
+        var response = _service.Parse(input, taxRate: 10m);
+
+        response.Success.Should().BeTrue();
+        response.Data!.TotalIncludingTax.Should().Be(1000m);
+        response.Data.TotalExcludingTax.Should().Be(909.09m);
+        response.Data.SalesTax.Should().Be(90.91m);
+    }
+
+    [Fact]
+    public void Parse_NullTaxRate_DefaultsToFifteenPercent()
+    {
+        const string input = "<expense><total>1000</total></expense>";
+
+        var response = _service.Parse(input, taxRate: null);
+
+        response.Success.Should().BeTrue();
+        // 15%: totalExcludingTax = 1000 / 1.15 = 869.57, salesTax = 130.43
+        response.Data!.TotalExcludingTax.Should().Be(869.57m);
+        response.Data.SalesTax.Should().Be(130.43m);
+    }
 }

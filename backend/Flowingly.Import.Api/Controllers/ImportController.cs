@@ -23,7 +23,7 @@ public sealed class ImportController : ControllerBase
     [ProducesResponseType(typeof(ParseResponse), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Parse([FromBody] ParseRequest request)
     {
-        var response = _service.Parse(request.Text);
+        var response = _service.Parse(request.Text, request.TaxRatePercent);
         return response.Success ? Ok(response) : UnprocessableEntity(response);
     }
 }
