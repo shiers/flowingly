@@ -371,6 +371,9 @@ All backend services are pure functions with no I/O. The application service tes
 **Plain CSS over a UI framework**  
 The frontend uses plain CSS. The UI requirements are simple and well-defined - introducing a component library would add complexity without benefit for a focused challenge submission.
 
+**Branching strategy**
+All work was committed directly to `main` for this submission. This is a deliberate choice for a solo challenge - a dev branch that merges into a single commit would obscure the progression of work, whereas the atomic commit history on `main` demonstrates how the implementation evolved incrementally. In a team environment the approach would be different: short-lived feature branches off `main`, pull requests with at least one required reviewer, a protected `main` that only accepts merges via PR, and a CI check that must pass before merge. The commit discipline here - grouped by concern, descriptive messages, no fixup commits - reflects the same habits that make that workflow effective.
+
 **HTTP 422 for validation failures**  
 The API returns `422 Unprocessable Entity` for validation errors rather than `400 Bad Request`. The request is syntactically valid JSON - the content fails business rules, which is the semantic distinction `422` is designed for.
 
