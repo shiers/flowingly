@@ -6,7 +6,7 @@ import { ErrorPanel } from './components/ErrorPanel';
 import './App.css';
 
 export default function App() {
-  const { input, result, error, loading, setInput, submit, clear } = useImportParser();
+  const { input, taxRate, result, error, loading, setInput, setTaxRate, submit, clear } = useImportParser();
 
   const showResult = result?.success && result.data != null;
   const showValidationErrors = result != null && !result.success && result.errors.length > 0;
@@ -22,8 +22,10 @@ export default function App() {
       <main className="app-main">
         <TextInputPanel
           value={input}
+          taxRate={taxRate}
           loading={loading}
           onChange={setInput}
+          onTaxRateChange={setTaxRate}
           onSubmit={submit}
           onClear={clear}
         />

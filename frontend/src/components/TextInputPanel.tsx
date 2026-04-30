@@ -1,18 +1,29 @@
 interface TextInputPanelProps {
   value: string;
+  taxRate: number;
   loading: boolean;
   onChange: (value: string) => void;
+  onTaxRateChange: (value: number) => void;
   onSubmit: () => void;
   onClear: () => void;
 }
 
 export function TextInputPanel({
   value,
+  taxRate,
   loading,
   onChange,
+  onTaxRateChange,
   onSubmit,
   onClear,
 }: TextInputPanelProps) {
+  function handleTaxRateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const parsed = parseFloat(e.target.value);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 100) {
+      onTaxRateChange(parsed);
+    }
+  }
+
   return (
     <div className="input-panel">
       <label htmlFor="import-input" className="input-label">
@@ -28,6 +39,23 @@ export function TextInputPanel({
         disabled={loading}
         aria-label="Email or text input"
       />
+      <div className="tax-rate-row">
+        <label htmlFor="tax-rate-input" className="input-label">
+          Tax rate (%)
+        </label>
+        <input
+          id="tax-rate-input"
+          type="number"
+          className="tax-rate-input"
+          value={taxRate}
+          min={0.01}
+          max={100}
+          step={0.01}
+          onChange={handleTaxRateChange}
+          disabled={loading}
+          aria-label="Tax rate percentage"
+        />
+      </div>
       <div className="input-actions">
         <button
           type="button"

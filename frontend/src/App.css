@@ -109,6 +109,37 @@ body {
 }
 
 /* -----------------------------------------------------------------------
+   Tax rate row
+----------------------------------------------------------------------- */
+.tax-rate-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tax-rate-input {
+  width: 6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  color: #1a1a1a;
+  transition: border-color 0.15s;
+}
+
+.tax-rate-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+}
+
+.tax-rate-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* -----------------------------------------------------------------------
    Buttons
 ----------------------------------------------------------------------- */
 .btn {
