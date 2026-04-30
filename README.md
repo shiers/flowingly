@@ -1,4 +1,4 @@
-# Flowingly Software Development Challenge
+﻿# Flowingly Software Development Challenge
 
 A full stack web application that parses structured data from semi-structured email content, validates required fields, calculates tax values, and returns a clean JSON representation.
 
@@ -90,9 +90,12 @@ POST /api/import/parse
 
 ```json
 {
-  "text": "Hi Patricia, please create an expense claim <expense><cost_centre>DEV632</cost_centre><total>35,000</total><payment_method>personal card</payment_method></expense>"
+  "text": "Hi Patricia, please create an expense claim <expense><cost_centre>DEV632</cost_centre><total>35,000</total><payment_method>personal card</payment_method></expense>",
+  "taxRatePercent": 15
 }
 ```
+
+`taxRatePercent` is optional. When omitted or null, the rate defaults to 15.
 
 ### Success response
 
@@ -153,15 +156,17 @@ POST /api/import/parse
 
 ## Tax Calculation
 
-The extracted `<total>` is treated as a GST-inclusive amount.
+The extracted `<total>` is treated as a tax-inclusive amount. The tax rate defaults to **15%** but can be overridden per request via the UI or the API.
 
 ```
-GST rate:            15%
-totalExcludingTax  = totalIncludingTax / 1.15
+tax rate:            configurable (default 15%)
+totalExcludingTax  = totalIncludingTax / (1 + rate)
 salesTax           = totalIncludingTax - totalExcludingTax
 ```
 
 All currency values are rounded to 2 decimal places. The rounding approach - deriving `salesTax` from the rounded `totalExcludingTax` rather than rounding independently - ensures the two components always reconcile to the original total.
+
+The UI exposes a **Tax rate (%)** field in the input panel, pre-filled to 15. Changing it before submitting applies that rate to the calculation. The API accepts the rate as an optional `taxRatePercent` field in the request body (a percentage value, e.g. `10` for 10%). When omitted or null, 15% is used.
 
 ---
 
@@ -186,26 +191,47 @@ The response includes `"aiExtensionReady": true` to identify where this layer wo
 - .NET 8 SDK
 - Node.js 20+
 
-### Backend
+### Quick start
 
+**Windows (PowerShell):**
+```powershell
+.\start.ps1
+```
+Opens the API and frontend as separate tabs in the current Windows Terminal window. Falls back to separate windows if Windows Terminal is not available.
+
+**Mac/Linux:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+Runs both servers in the same terminal. Ctrl+C stops both.
+
+**VS Code:**
+Run the `Start Dev Servers` task (`Ctrl+Shift+B` / `Cmd+Shift+B`) to launch both servers in the integrated terminal panel.
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| API | http://localhost:5000 |
+| Swagger | http://localhost:5000/swagger |
+
+### Manual start
+
+If you prefer to start each server individually:
+
+**Backend**
 ```bash
 cd backend/Flowingly.Import.Api
 dotnet restore
 dotnet run --urls http://localhost:5000
 ```
 
-API: http://localhost:5000  
-Swagger: http://localhost:5000/swagger
-
-### Frontend
-
+**Frontend**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-Frontend: http://localhost:5173
 
 The Vite dev server proxies `/api` requests to `http://localhost:5000` automatically.
 
@@ -259,12 +285,12 @@ Tests cover:
 
 ## Running E2E Tests
 
-Both the frontend dev server and backend API must be running first (see Running Locally above), then:
-
 ```bash
 cd e2e
 npm test
 ```
+
+Playwright will start the backend API and frontend dev server automatically before the tests run and stop them afterwards. If either server is already running, it will be reused.
 
 Tests cover:
 
@@ -285,6 +311,9 @@ The parser uses an iterative innermost-first regex strategy rather than a full X
 **`ResolveCostCentre` on the validator**  
 The defaulting rule for `cost_centre` is a business rule, not a parsing concern. Placing `ResolveCostCentre` on `IImportValidator` keeps the rule co-located with the validation logic that governs it, without mutating the immutable `ParsedImportData` domain model.
 
+**`<expense>` is treated as a structural container, not a data field**  
+The parser exempts `<expense>` from the unmatched opening tag check. It acts as a grouping wrapper - like a root XML element - and carries no extractable value itself. Rejecting a message because the `<expense>` wrapper is unmatched would be overly strict: all inner fields can still be extracted successfully regardless of whether the wrapper is closed. If a future requirement introduces multiple expense blocks in a single message, the last-value-wins extraction rule already handles that gracefully, and the container tag list in `MarkupParser` can be extended without touching any other logic.
+
 **No mocking library in tests**  
 All backend services are pure functions with no I/O. The application service tests use real implementations throughout, which exercises the full pipeline end-to-end and avoids the overhead of a mocking framework for a project of this scope.
 
@@ -298,7 +327,6 @@ The API returns `422 Unprocessable Entity` for validation errors rather than `40
 
 ## Future Improvements
 
-- Configurable tax rates (currently hardcoded at 15% GST)
 - Support for additional field tags without code changes (e.g. a tag registry)
 - Richer date normalisation across multiple input formats
 - Enhanced workflow classification using additional field combinations
