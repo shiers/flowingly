@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Flowingly - Azure Deployment Script
+# Flowingly - Azure Infrastructure Provisioning Script
 # =============================================================================
 # Provisions:
 #   - Resource Group
 #   - Azure Container Registry (ACR) - Basic tier
 #   - Container Apps Environment
-#   - Container App: API (.NET 8)
+#   - Container App: API (.NET 8) - initially with a placeholder image
 #   - Static Web App: Frontend (React)
+#
+# NOTE: This script only provisions infrastructure.
+# The first real image build and deploy happens via GitHub Actions
+# after you add the secrets printed at the end of this script.
 #
 # Prerequisites:
 #   - Azure CLI installed and logged in (az login)
-#   - Docker running locally (for initial image push)
 #
 # Usage:
-#   chmod +x infra/deploy.sh
-#   ./infra/deploy.sh
-#
-# After first run, CI/CD via GitHub Actions handles subsequent deployments.
+#   bash infra/deploy.sh
 # =============================================================================
 
 set -euo pipefail
@@ -36,8 +36,29 @@ STATIC_APP_NAME="flowingly-frontend"
 # Derived values
 # ---------------------------------------------------------------------------
 ACR_LOGIN_SERVER="${ACR_NAME}.azurecr.io"
-API_IMAGE="${ACR_LOGIN_SERVER}/flowingly-api:latest"
 
+# ---------------------------------------------------------------------------
+# Register required providers and wait for all to complete
+# ---------------------------------------------------------------------------
+echo "==> Registering required Azure providers (this may take a minute)"
+az provider register --namespace Microsoft.ContainerRegistry
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.OperationalInsights
+az provider register --namespace Microsoft.Web
+
+echo "==> Waiting for Microsoft.ContainerRegistry..."
+az provider register --namespace Microsoft.ContainerRegistry --wait
+echo "==> Waiting for Microsoft.App..."
+az provider register --namespace Microsoft.App --wait
+echo "==> Waiting for Microsoft.OperationalInsights..."
+az provider register --namespace Microsoft.OperationalInsights --wait
+echo "==> Waiting for Microsoft.Web..."
+az provider register --namespace Microsoft.Web --wait
+echo "==> All providers registered"
+
+# ---------------------------------------------------------------------------
+# Resource Group
+# ---------------------------------------------------------------------------
 echo "==> Creating resource group: ${RESOURCE_GROUP}"
 az group create \
   --name "${RESOURCE_GROUP}" \
@@ -55,19 +76,10 @@ az acr create \
   --admin-enabled true \
   --output none
 
-echo "==> Logging in to ACR"
-az acr login --name "${ACR_NAME}"
-
-# ---------------------------------------------------------------------------
-# Build and push API image
-# ---------------------------------------------------------------------------
-echo "==> Building and pushing API image"
-docker build \
-  --tag "${API_IMAGE}" \
-  --file backend/Dockerfile \
-  backend/
-
-docker push "${API_IMAGE}"
+ACR_PASSWORD=$(az acr credential show \
+  --name "${ACR_NAME}" \
+  --query "passwords[0].value" \
+  --output tsv)
 
 # ---------------------------------------------------------------------------
 # Container Apps Environment
@@ -81,28 +93,19 @@ az containerapp env create \
 
 # ---------------------------------------------------------------------------
 # API Container App
+# Use a public placeholder image for now.
+# GitHub Actions will deploy the real image on first push.
 # ---------------------------------------------------------------------------
-ACR_PASSWORD=$(az acr credential show \
-  --name "${ACR_NAME}" \
-  --query "passwords[0].value" \
-  --output tsv)
-
 echo "==> Creating API Container App: ${API_APP_NAME}"
 az containerapp create \
   --name "${API_APP_NAME}" \
   --resource-group "${RESOURCE_GROUP}" \
   --environment "${CONTAINER_ENV}" \
-  --image "${API_IMAGE}" \
-  --registry-server "${ACR_LOGIN_SERVER}" \
-  --registry-username "${ACR_NAME}" \
-  --registry-password "${ACR_PASSWORD}" \
-  --target-port 5000 \
+  --image "mcr.microsoft.com/dotnet/samples:aspnetapp" \
+  --target-port 8080 \
   --ingress external \
   --min-replicas 0 \
   --max-replicas 1 \
-  --env-vars \
-      ASPNETCORE_URLS="http://+:5000" \
-      ASPNETCORE_ENVIRONMENT="Production" \
   --output none
 
 API_URL=$(az containerapp show \
@@ -111,8 +114,6 @@ API_URL=$(az containerapp show \
   --query "properties.configuration.ingress.fqdn" \
   --output tsv)
 
-echo "==> API deployed at: https://${API_URL}"
-
 # ---------------------------------------------------------------------------
 # Static Web App (frontend)
 # ---------------------------------------------------------------------------
@@ -120,7 +121,7 @@ echo "==> Creating Static Web App: ${STATIC_APP_NAME}"
 az staticwebapp create \
   --name "${STATIC_APP_NAME}" \
   --resource-group "${RESOURCE_GROUP}" \
-  --location "${LOCATION}" \
+  --location "eastasia" \
   --sku Free \
   --output none
 
@@ -130,22 +131,39 @@ STATIC_URL=$(az staticwebapp show \
   --query "defaultHostname" \
   --output tsv)
 
+STATIC_TOKEN=$(az staticwebapp secrets list \
+  --name "${STATIC_APP_NAME}" \
+  --query "properties.apiKey" \
+  --output tsv)
+
+# ---------------------------------------------------------------------------
+# Summary
+# ---------------------------------------------------------------------------
 echo ""
 echo "============================================================"
-echo "  Deployment complete!"
+echo "  Infrastructure provisioned!"
 echo "============================================================"
-echo "  API URL:      https://${API_URL}"
-echo "  Frontend URL: https://${STATIC_URL}"
+echo "  API URL (placeholder):  https://${API_URL}"
+echo "  Frontend URL:           https://${STATIC_URL}"
 echo ""
-echo "  Next steps:"
-echo "  1. Add the following secrets to your GitHub repository:"
-echo "     AZURE_CREDENTIALS        - Service principal JSON (see infra/README.md)"
-echo "     ACR_LOGIN_SERVER         - ${ACR_LOGIN_SERVER}"
-echo "     ACR_USERNAME             - ${ACR_NAME}"
-echo "     ACR_PASSWORD             - (from: az acr credential show --name ${ACR_NAME})"
-echo "     AZURE_RESOURCE_GROUP     - ${RESOURCE_GROUP}"
-echo "     AZURE_CONTAINER_APP_NAME - ${API_APP_NAME}"
-echo "     AZURE_STATIC_APP_TOKEN   - (from: az staticwebapp secrets list --name ${STATIC_APP_NAME} --query 'properties.apiKey' -o tsv)"
-echo "     VITE_API_URL             - https://${API_URL}"
-echo "  2. Push to main to trigger the CI/CD pipeline."
+echo "  Add these secrets to GitHub:"
+echo "  (Settings → Secrets and variables → Actions)"
+echo ""
+echo "  AZURE_CREDENTIALS        - see below"
+echo "  ACR_LOGIN_SERVER         - ${ACR_LOGIN_SERVER}"
+echo "  ACR_USERNAME             - ${ACR_NAME}"
+echo "  ACR_PASSWORD             - ${ACR_PASSWORD}"
+echo "  AZURE_RESOURCE_GROUP     - ${RESOURCE_GROUP}"
+echo "  AZURE_CONTAINER_APP_NAME - ${API_APP_NAME}"
+echo "  AZURE_STATIC_APP_TOKEN   - ${STATIC_TOKEN}"
+echo "  VITE_API_URL             - https://${API_URL}"
+echo ""
+echo "  To generate AZURE_CREDENTIALS, run:"
+echo "  az ad sp create-for-rbac \\"
+echo "    --name flowingly-github-actions \\"
+echo "    --role contributor \\"
+echo "    --scopes /subscriptions/\$(az account show --query id -o tsv)/resourceGroups/${RESOURCE_GROUP} \\"
+echo "    --sdk-auth"
+echo ""
+echo "  Then push to main to trigger the first real deployment."
 echo "============================================================"
