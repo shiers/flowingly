@@ -226,6 +226,17 @@ The frontend Nginx container proxies `/api` requests to the backend service. No 
 
 ---
 
+## Live Demo
+
+| Service | URL |
+|---|---|
+| Frontend | https://ambitious-meadow-06be83200.7.azurestaticapps.net |
+| API | https://flowingly-api.politegrass-0f143e86.australiaeast.azurecontainerapps.io |
+
+The application is hosted on Azure using Azure Static Web Apps (frontend) and Azure Container Apps (API). Every push to `main` triggers the GitHub Actions workflow which rebuilds and redeploys both services automatically. See `infra/README.md` for setup instructions.
+
+---
+
 ## Running Backend Tests
 
 ```bash
