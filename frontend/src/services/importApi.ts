@@ -1,6 +1,9 @@
 import type { ParseResponse } from '../types/importTypes';
 
-const API_BASE = '/api/import';
+// In local dev (Vite proxy) and Docker Compose (nginx proxy), VITE_API_URL is not set
+// and requests go to /api which is proxied to the backend.
+// In Azure (Static Web Apps), VITE_API_URL is set to the Container Apps backend URL.
+const API_BASE = `${import.meta.env.VITE_API_URL ?? ''}/api/import`;
 
 export async function parseText(text: string): Promise<ParseResponse> {
   const response = await fetch(`${API_BASE}/parse`, {
