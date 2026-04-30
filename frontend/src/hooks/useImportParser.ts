@@ -45,6 +45,7 @@ export function useImportParser(): ImportParserState & ImportParserActions {
 
   function clear() {
     setInput('');
+    setTaxRate(DEFAULT_TAX_RATE);
     setResult(null);
     setError(null);
   }
