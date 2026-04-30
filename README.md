@@ -351,7 +351,7 @@ Tests cover:
 ## Design Decisions and Tradeoffs
 
 **Playwright over Selenium for E2E tests**
-Playwright was chosen over Selenium for several practical reasons. It has first-class TypeScript support and ships its own test runner, assertion library, and browser binaries as a single `npm` package — no separate WebDriver binaries, no version-matching friction. The `webServer` config lets Playwright start and stop both the API and frontend automatically, so `npm test` is a single command with no manual setup. Playwright's auto-waiting model eliminates most of the explicit `wait` calls that make Selenium tests brittle. For a React + Vite frontend, it is the more natural fit and the direction the industry has moved for modern web E2E testing.
+Playwright was chosen over Selenium for several practical reasons. It has first-class TypeScript support and ships its own test runner, assertion library, and browser binaries as a single `npm` package - no separate WebDriver binaries, no version-matching friction. The `webServer` config lets Playwright start and stop both the API and frontend automatically, so `npm test` is a single command with no manual setup. Playwright's auto-waiting model eliminates most of the explicit `wait` calls that make Selenium tests brittle. For a React + Vite frontend, it is the more natural fit and the direction the industry has moved for modern web E2E testing.
 
 **Deterministic parsing over regex flexibility**  
 The parser uses an iterative innermost-first regex strategy rather than a full XML parser. This keeps the dependency footprint minimal and the behaviour predictable for the tag formats defined in the challenge. It handles both nested blocks (`<expense>...</expense>`) and inline tags correctly.
