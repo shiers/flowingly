@@ -18,8 +18,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:8080",   // Nginx production container
                 "https://ambitious-meadow-06be83200.7.azurestaticapps.net" // Azure Static Web Apps
             )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+            .WithMethods("POST")
+            .WithHeaders("Content-Type");
     });
 });
 
