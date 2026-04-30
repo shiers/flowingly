@@ -172,16 +172,64 @@ The UI exposes a **Tax rate (%)** field in the input panel, pre-filled to 15. Ch
 
 ## AI Extension Point
 
-The parser is intentionally deterministic. It does not use AI, and the challenge does not require it.
+The parser is intentionally deterministic. It does not use AI, and the challenge does not require it. That is the right call for a data extraction pipeline where correctness and predictability matter most - an AI model should never be the thing that decides whether a `<total>` tag is present or a number is valid.
 
-In a production workflow automation platform, an AI-assisted layer could be introduced *after* deterministic validation to support:
+Where AI genuinely adds value is in the layer *above* deterministic validation - handling the ambiguous, incomplete, and unstructured cases that rule-based systems cannot cover. The pipeline is designed with this in mind.
 
-- workflow classification beyond simple rule matching
-- missing field suggestions for human review
-- natural language summarisation of the parsed result
-- routing decisions based on extracted context
+### Where AI fits in the pipeline
 
-The response includes `"aiExtensionReady": true` to identify where this layer would integrate - after the deterministic pipeline has validated and structured the data - without compromising the reliability of the core parsing logic.
+```
+Raw email text
+      |
+      v
+MarkupParser          - deterministic: extract tags, detect structural errors
+      |
+      v
+ImportValidator       - deterministic: enforce business rules, reject invalid data
+      |
+      v
+[AI Enrichment]       - probabilistic: fill gaps, classify intent, suggest corrections
+      |
+      v
+TaxCalculator         - deterministic: arithmetic on validated data
+      |
+      v
+WorkflowInsightBuilder - deterministic + AI-assisted: route to correct workflow
+      |
+      v
+Response
+```
+
+The `aiExtensionReady: true` flag in every response marks the handoff point. Downstream consumers can use it to decide whether to invoke an AI enrichment step.
+
+### Concrete integration points
+
+**1. Missing field recovery**
+When `cost_centre` is absent, the current behaviour defaults to `UNKNOWN`. An Azure OpenAI call with the raw email text and a structured prompt could infer the cost centre from context - department names, project references, sender patterns - and return a suggested value with a confidence score for human review rather than a hard default.
+
+**2. Richer workflow classification**
+`WorkflowInsightBuilder` currently classifies as `expense_claim` or `unknown` based on whether `<total>` is present. With an AI layer, the full email body could be passed to a classification prompt to distinguish between expense claims, purchase orders, reimbursement requests, and vendor invoices - enabling smarter downstream routing in a workflow automation platform.
+
+**3. Ambiguous input handling**
+Emails that partially match the expected format - fields present but not tagged, amounts written in prose, dates in non-standard formats - currently fail validation. An AI pre-processing step could attempt to normalise these inputs into the tagged format before the deterministic parser runs, dramatically increasing the range of inputs the system can handle without sacrificing the reliability of the core pipeline.
+
+**4. Natural language summarisation**
+The structured `ParsedDataDto` response could be passed to a completion model to generate a plain-English summary for display in a workflow task - "William Steele has submitted an expense claim of $35,000 for a team dinner at Seaside Steakhouse, charged to cost centre DEV632" - reducing the cognitive load on approvers.
+
+### Implementation approach with Azure OpenAI
+
+The enrichment layer would be introduced as a new service behind an interface, injected into `ImportApplicationService` between validation and tax calculation:
+
+```csharp
+public interface IAiEnrichmentService
+{
+    Task<EnrichmentResult> EnrichAsync(ParsedImportData data, string rawText);
+}
+```
+
+This keeps the deterministic pipeline intact and makes the AI layer independently testable, replaceable, and opt-in. The Azure OpenAI SDK for .NET (`Azure.AI.OpenAI`) integrates cleanly with ASP.NET Core's DI container and supports both chat completions and structured output via JSON mode - which is the right approach for extracting typed field suggestions rather than free-form text.
+
+Feature flags or a per-request `enableAiEnrichment` parameter would allow the AI layer to be toggled without redeployment, which is important in a production workflow platform where reliability guarantees need to be maintained independently of AI availability.
 
 ---
 
@@ -302,6 +350,9 @@ Tests cover:
 
 ## Design Decisions and Tradeoffs
 
+**Playwright over Selenium for E2E tests**
+Playwright was chosen over Selenium for several practical reasons. It has first-class TypeScript support and ships its own test runner, assertion library, and browser binaries as a single `npm` package — no separate WebDriver binaries, no version-matching friction. The `webServer` config lets Playwright start and stop both the API and frontend automatically, so `npm test` is a single command with no manual setup. Playwright's auto-waiting model eliminates most of the explicit `wait` calls that make Selenium tests brittle. For a React + Vite frontend, it is the more natural fit and the direction the industry has moved for modern web E2E testing.
+
 **Deterministic parsing over regex flexibility**  
 The parser uses an iterative innermost-first regex strategy rather than a full XML parser. This keeps the dependency footprint minimal and the behaviour predictable for the tag formats defined in the challenge. It handles both nested blocks (`<expense>...</expense>`) and inline tags correctly.
 
@@ -329,7 +380,6 @@ The API returns `422 Unprocessable Entity` for validation errors rather than `40
 
 - Support for additional field tags without code changes (e.g. a tag registry)
 - Richer date normalisation across multiple input formats
-- Enhanced workflow classification using additional field combinations
-- AI-assisted review layer for ambiguous or incomplete inputs (see AI Extension Point above)
+- AI enrichment layer using Azure OpenAI for missing field recovery, workflow classification, and ambiguous input handling (see AI Extension Point above)
 - CI pipeline for automated test execution on pull requests
 - Integration test coverage for the full HTTP layer
